@@ -126,7 +126,7 @@ class NumberIntersection:
 class CrossNumber:
     sections: Dict[str, NumberSection] = attr.ib(factory=dict)
     intersections: List[NumberIntersection] = attr.ib(factory=list)
-    words: FrozenSet[str] = attr.ib(default=frozenset(thirdpower(1000, 10_000_000)))
+    words: FrozenSet[str] = attr.ib(default=frozenset(), converter=frozenset)
     options: Dict[int, FrozenSet[str]] = attr.ib(init=False)
 
     def __attrs_post_init__(self):
@@ -335,12 +335,25 @@ def generate_graph(input_file, fixed=None, **kwargs):
     return cs
 
 
+CONFIG = {
+    "kwadraten": {
+        "solution": ["IG", "DB", "BI", "GD", "EB", "BE", "AC", "BA"],
+        "input_file": "kwadraten_input.txt",
+        "word_generator": secondpower(10, 1_000_000),
+    },
+    "derdemachten": {
+        "solution": ["KB", "OC", "CF", "EG", "KL", "CL", "GM", "JI"],
+        "input_file": "derdemachten_input.txt",
+        "word_generator": thirdpower(1000, 10_000_000),
+    },
+}
+
+
 if __name__ == "__main__":
-    # cs = generate_graph(
-    #     input_file="kwadraten.txt", words=frozenset(secondpower(10, 1_000_000))
-    # )
-    cs = generate_graph(input_file="derdemachten.txt")
-    print("=" * 80)
+    challenge = CONFIG["kwadraten"]
+    cs = generate_graph(
+        input_file=challenge["input_file"], words=challenge["word_generator"]
+    )
     cs.solve()
     iterations = 0
     while not cs.is_solved and iterations <= 10:
@@ -351,7 +364,6 @@ if __name__ == "__main__":
             print(section_key, cs.score)
             if cs.is_solved:
                 break
-
     print(cs)
-    for idx, pos in zip("ABCDEFGH", ["KB", "OC", "CF", "EG", "KL", "CL", "GM", "JI"]):
+    for idx, pos in zip(string.ascii_uppercase, challenge["solution"]):
         print(idx, cs.get_value(pos))
