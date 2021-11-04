@@ -10,6 +10,29 @@ import attr
 import numpy as np
 from attr.validators import instance_of
 
+crossnumber_array = (
+    np.array(
+        [
+            ["#", "#", "#", "#", "#", "-", "-", "#", "-", "#", "#", "#", "#", "#", "#"],
+            ["#", "-", "-", "-", "#", "#", "#", "#", "-", "-", "#", "-", "#", "-", "#"],
+            ["#", "#", "#", "#", "#", "-", "-", "#", "#", "#", "#", "#", "#", "-", "#"],
+            ["#", "-", "#", "-", "#", "-", "-", "#", "-", "-", "#", "-", "#", "-", "#"],
+            ["#", "#", "#", "#", "#", "#", "#", "-", "#", "#", "#", "#", "#", "#", "#"],
+            ["#", "-", "#", "-", "#", "-", "#", "-", "#", "-", "#", "-", "-", "#", "-"],
+            ["-", "-", "#", "-", "#", "#", "#", "#", "#", "#", "#", "-", "-", "#", "-"],
+            ["#", "#", "#", "#", "-", "-", "#", "-", "#", "-", "-", "#", "#", "#", "#"],
+            ["-", "#", "-", "-", "#", "#", "#", "#", "#", "#", "#", "-", "#", "-", "-"],
+            ["-", "#", "-", "-", "#", "-", "#", "-", "#", "-", "#", "-", "#", "-", "#"],
+            ["#", "#", "#", "#", "#", "#", "#", "-", "#", "#", "#", "#", "#", "#", "#"],
+            ["#", "-", "#", "-", "#", "-", "-", "#", "-", "-", "#", "-", "#", "-", "#"],
+            ["#", "-", "#", "#", "#", "#", "#", "#", "-", "-", "#", "#", "#", "#", "#"],
+            ["#", "-", "#", "-", "#", "-", "-", "#", "#", "#", "#", "-", "-", "-", "#"],
+            ["#", "#", "#", "#", "#", "#", "-", "#", "-", "-", "#", "#", "#", "#", "#"],
+        ]
+    )
+    == "#"
+)
+
 
 def thirdpower(start, stop):
     i_start = int(np.ceil(start ** (1 / 3)))
@@ -49,9 +72,7 @@ class Orientation(Enum):
 class NumberSection:
     origin: str
     options: Set[str] = attr.ib(validator=instance_of(set), converter=set)
-    orientation: Orientation = attr.ib(
-        validator=instance_of(Orientation), converter=lambda x: Orientation[x.upper()]
-    )
+    orientation: Orientation = attr.ib(validator=instance_of(Orientation), converter=lambda x: Orientation[x.upper()])
     length: int = attr.ib(init=False)
     indexes: Tuple[str] = attr.ib(init=False)
 
@@ -128,9 +149,7 @@ class CrossNumber:
     def add_section(self, identifier, length):
         origin, orientation = identifier.split("-")
         orientation = "horizontal" if orientation == "h" else "vertical"
-        self.sections[identifier] = NumberSection(
-            origin=origin, options=self.options[length], orientation=orientation
-        )
+        self.sections[identifier] = NumberSection(origin=origin, options=self.options[length], orientation=orientation)
 
     def connect(self, horizontal_key, vertical_key, horizontal_idx, vertical_idx):
         self.intersections.append(
@@ -161,9 +180,7 @@ class CrossNumber:
     def parse_uniques(self):
         for section_key, section in self.sections.items():
             if len(section.options) > 1:
-                self.sections[section_key].options = section.options.difference(
-                    self.uniques
-                )
+                self.sections[section_key].options = section.options.difference(self.uniques)
 
     @property
     def option_lengths(self):
@@ -255,103 +272,68 @@ class CrossNumber:
         return output
 
 
+def get_block_coord_dict(c: np.array, transpose: bool):
+    horizontal_block_coords = []
+    if transpose:
+        c = c.T
+    for y_i, row in enumerate(c):
+        for x_i, cell in enumerate(row):
+            if x_i == 0 and cell and row[x_i + 1]:
+                horizontal_block_coords.append((y_i, x_i))
+            elif x_i < (len(row) - 2) and cell and not row[x_i - 1] and row[x_i + 1]:
+                horizontal_block_coords.append((y_i, x_i))
+
+    horizontal_block_coords_dict = {}
+    for y, x in horizontal_block_coords:
+        row = c[y, x:]
+        first_false = np.argmin(row)
+        if first_false:
+            if transpose:
+                horizontal_block_coords_dict[x, y] = first_false
+            else:
+                horizontal_block_coords_dict[y, x] = first_false
+        else:
+            if transpose:
+                horizontal_block_coords_dict[x, y] = len(row)
+            else:
+                horizontal_block_coords_dict[y, x] = len(row)
+    return horizontal_block_coords_dict
+
+
 def generate_graph(fixed=None):
     cs = CrossNumber()
+    letters = "ABCDEFGHIJKLMNO"
+
     # sections
-    cs.add_section("AA-h", 5)
-    cs.add_section("AA-v", 6)
-    cs.add_section("AC-h", 5)
-    cs.add_section("AE-h", 7)
-    cs.add_section("AH-h", 4)
-    cs.add_section("AK-h", 7)
-    cs.add_section("AK-v", 5)
-    cs.add_section("AO-h", 6)
-    cs.add_section("BH-v", 4)
-    cs.add_section("CC-v", 6)
-    cs.add_section("CM-h", 6)
-    cs.add_section("CK-v", 5)
-    cs.add_section("EA-v", 7)
-    cs.add_section("EB-h", 4)
-    cs.add_section("EG-h", 7)
-    cs.add_section("EI-h", 7)
-    cs.add_section("EI-v", 7)
-    cs.add_section("GE-v", 7)
-    cs.add_section("HA-v", 4)
-    cs.add_section("HC-h", 6)
-    cs.add_section("HL-v", 4)
-    cs.add_section("HN-h", 4)
-    cs.add_section("IE-h", 7)
-    cs.add_section("IE-v", 7)
-    cs.add_section("IK-h", 7)
-    cs.add_section("JA-h", 6)
-    cs.add_section("KM-h", 5)
-    cs.add_section("KA-v", 7)
-    cs.add_section("KI-v", 7)
-    cs.add_section("KO-h", 5)
-    cs.add_section("LH-h", 4)
-    cs.add_section("MA-v", 5)
-    cs.add_section("MH-v", 6)
-    cs.add_section("NE-v", 4)
-    cs.add_section("OA-v", 5)
-    cs.add_section("OJ-v", 6)
+    h_block_coords = get_block_coord_dict(crossnumber_array, transpose=False)
+    for coord, digits in h_block_coords.items():
+        cs.add_section(f"{letters[coord[1]]}{letters[coord[0]]}-h", digits)
+        print(f"{letters[coord[1]]}{letters[coord[0]]}-h", digits)
+
+    v_block_coords = get_block_coord_dict(crossnumber_array, transpose=True)
+    for coord, digits in v_block_coords.items():
+        cs.add_section(f"{letters[coord[1]]}{letters[coord[0]]}-v", digits)
+        print(f"{letters[coord[1]]}{letters[coord[0]]}-v", digits)
 
     # intersections
-    cs.connect("AA-h", "AA-v", 0, 0)
-    cs.connect("AA-h", "EA-v", 4, 0)
-    cs.connect("AC-h", "AA-v", 0, 2)
-    cs.connect("AC-h", "CC-v", 2, 0)
-    cs.connect("AC-h", "EA-v", 4, 2)
-    cs.connect("AE-h", "AA-v", 0, 4)
-    cs.connect("AE-h", "CC-v", 2, 2)
-    cs.connect("AE-h", "EA-v", 4, 4)
-    cs.connect("AE-h", "GE-v", 6, 0)
-    cs.connect("AH-h", "BH-v", 1, 0)
-    cs.connect("AH-h", "CC-v", 2, 5)
-    cs.connect("AK-h", "BH-v", 1, 3)
-    cs.connect("AK-h", "AK-v", 0, 0)
-    cs.connect("AK-h", "CK-v", 2, 0)
-    cs.connect("AK-h", "EI-v", 4, 2)
-    cs.connect("AK-h", "GE-v", 6, 6)
-    cs.connect("AO-h", "AK-v", 0, 4)
-    cs.connect("AO-h", "CK-v", 2, 4)
-    cs.connect("AO-h", "EI-v", 4, 6)
-    cs.connect("CM-h", "CK-v", 0, 2)
-    cs.connect("CM-h", "EI-v", 2, 4)
-    cs.connect("CM-h", "HL-v", 5, 1)
-    cs.connect("EB-h", "EA-v", 0, 1)
-    cs.connect("EB-h", "HA-v", 3, 1)
-    cs.connect("EG-h", "EA-v", 0, 6)
-    cs.connect("EG-h", "GE-v", 2, 2)
-    cs.connect("EG-h", "IE-v", 4, 2)
-    cs.connect("EG-h", "KA-v", 6, 6)
-    cs.connect("EI-h", "EI-v", 0, 0)
-    cs.connect("EI-h", "GE-v", 2, 4)
-    cs.connect("EI-h", "IE-v", 4, 4)
-    cs.connect("EI-h", "KI-v", 6, 0)
-    cs.connect("HC-h", "HA-v", 0, 2)
-    cs.connect("HC-h", "KA-v", 3, 2)
-    cs.connect("HC-h", "MA-v", 5, 2)
-    cs.connect("HN-h", "HL-v", 0, 2)
-    cs.connect("HN-h", "KI-v", 3, 5)
-    cs.connect("IE-h", "IE-v", 0, 0)
-    cs.connect("IE-h", "KA-v", 2, 4)
-    cs.connect("IE-h", "MA-v", 4, 4)
-    cs.connect("IE-h", "NE-v", 5, 0)
-    cs.connect("IE-h", "OA-v", 6, 4)
-    cs.connect("IK-h", "IE-v", 0, 6)
-    cs.connect("IK-h", "KI-v", 2, 2)
-    cs.connect("IK-h", "MH-v", 4, 3)
-    cs.connect("IK-h", "OJ-v", 6, 1)
-    cs.connect("JA-h", "KA-v", 1, 0)
-    cs.connect("JA-h", "MA-v", 3, 0)
-    cs.connect("JA-h", "OA-v", 5, 0)
-    cs.connect("KM-h", "KI-v", 0, 4)
-    cs.connect("KM-h", "MH-v", 2, 5)
-    cs.connect("KM-h", "OJ-v", 4, 3)
-    cs.connect("KO-h", "KI-v", 0, 6)
-    cs.connect("KO-h", "OJ-v", 4, 5)
-    cs.connect("LH-h", "MH-v", 1, 0)
-    cs.connect("LH-h", "NE-v", 2, 3)
+    for h_coord, h_digits in h_block_coords.items():
+        for v_coord, v_digits in v_block_coords.items():
+            # check if intersects
+            if (h_coord[1] <= v_coord[1] <= h_coord[1] + h_digits - 1) and (
+                v_coord[0] <= h_coord[0] <= v_coord[0] + v_digits - 1
+            ):
+                cs.connect(
+                    f"{letters[h_coord[1]]}{letters[h_coord[0]]}-h",
+                    f"{letters[v_coord[1]]}{letters[v_coord[0]]}-v",
+                    v_coord[1] - h_coord[1],
+                    h_coord[0] - v_coord[0],
+                )
+                print(
+                    f"{letters[h_coord[1]]}{letters[h_coord[0]]}-h",
+                    f"{letters[v_coord[1]]}{letters[v_coord[0]]}-v",
+                    v_coord[1] - h_coord[1],
+                    h_coord[0] - v_coord[0],
+                )
 
     if fixed is not None:
         for section_key, options in fixed.items():
