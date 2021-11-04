@@ -79,12 +79,21 @@ class NumberSection:
             return [f"{cst}{idx}" for idx in indexes]
 
 
-@attr.s(auto_attribs=True)
+@attr.s(auto_attribs=True, repr=False)
 class NumberIntersection:
     horizontal: NumberSection = attr.ib(validator=instance_of(NumberSection))
     vertical: NumberSection = attr.ib(validator=instance_of(NumberSection))
     horizontal_idx: int = attr.ib(validator=instance_of(int))
     vertical_idx: int = attr.ib(validator=instance_of(int))
+
+    @property
+    def position(self):
+        indexes = string.ascii_uppercase
+        h_idx = indexes.find(self.horizontal.origin[0]) + self.horizontal_idx
+        h_val = indexes[h_idx]
+        v_idx = indexes.find(self.vertical.origin[1]) + self.vertical_idx
+        v_val = indexes[v_idx]
+        return f"{h_val}{v_val}"
 
     def filter(self):
         vertical_options = matches(
@@ -101,6 +110,9 @@ class NumberIntersection:
         )
         self.vertical.options = vertical_options
         self.horizontal.options = horizontal_options
+
+    def __repr__(self):
+        return f"{self.vertical.origin}-{self.horizontal.origin}-{self.position}"
 
 
 @attr.s(repr=False)
@@ -157,15 +169,25 @@ class CrossNumber:
     def option_lengths(self):
         return [len(section.options) for section in self.sections.values()]
 
+    @property
+    def is_invalid(self):
+        """Check if the current state is invalid."""
+        return min(self.option_lengths) == 0
+
+    @property
+    def is_solved(self):
+        """Check if the current state is a solution."""
+        return max(self.option_lengths) == 1
+
     def assume(self, label):
         remove = set()
         for option in self.sections[label].options:
             assumed = deepcopy(self)
             assumed.sections[label].options = set([option])
             assumed.solve()
-            if min(assumed.option_lengths) == 0:
+            if assumed.is_invalid:
                 remove.add(option)
-            elif max(assumed.option_lengths) == 1:
+            elif assumed.is_solved:
                 print("SOLVED!")
         self.sections[label].options = self.sections[label].options.difference(remove)
 
@@ -209,104 +231,94 @@ class CrossNumber:
             output += "\n" + 62 * "-" + "|\n"
         return output
 
+    @property
+    def intersection_positions(self):
+        return [intersection.position for intersection in self.intersections]
 
-def generate_graph(fixed=None):
-    cs = CrossNumber()
+    def is_intersection(self, position):
+        for intersection in self.intersections:
+            if intersection.position == position:
+                return True
+        return False
+
+    def get_intersection_value(self, position):
+        if self.is_intersection(position=position):
+            return " X "
+        for section in self.sections.values():
+            if position in section.indexes:
+                return "   "
+        return "\u2588" * 3
+
+    def print_intersections(self):
+        indexes = " ABCDEFGHIJKLMNO"
+        output = ""
+        for r_idx, row in enumerate(indexes):
+            output += row + " |"
+            for c_idx, column in enumerate(indexes):
+                if c_idx:
+                    if r_idx:
+                        value = self.get_intersection_value(position=f"{column}{row}")
+                        output += f"{value}|"
+                    else:
+                        output += f" {column} |"
+            output += "\n" + 62 * "-" + "|\n"
+        return output
+
+
+def get_block_coord_dict(c: np.array, transpose: bool):
+    horizontal_block_coords = []
+    if transpose:
+        c = c.T
+    for y_i, row in enumerate(c):
+        for x_i, cell in enumerate(row):
+            if x_i == 0 and cell and row[x_i + 1]:
+                horizontal_block_coords.append((y_i, x_i))
+            elif x_i < (len(row) - 2) and cell and not row[x_i - 1] and row[x_i + 1]:
+                horizontal_block_coords.append((y_i, x_i))
+
+    horizontal_block_coords_dict = {}
+    for y, x in horizontal_block_coords:
+        row = c[y, x:]
+        first_false = np.argmin(row)
+        if first_false:
+            if transpose:
+                horizontal_block_coords_dict[x, y] = first_false
+            else:
+                horizontal_block_coords_dict[y, x] = first_false
+        else:
+            if transpose:
+                horizontal_block_coords_dict[x, y] = len(row)
+            else:
+                horizontal_block_coords_dict[y, x] = len(row)
+    return horizontal_block_coords_dict
+
+
+def generate_graph(input_file, fixed=None, **kwargs):
+    cs = CrossNumber(**kwargs)
+    letters = "ABCDEFGHIJKLMNO"
+    crossnumber_array = np.loadtxt(input_file)
     # sections
-    cs.add_section("AA-h", 5)
-    cs.add_section("AA-v", 6)
-    cs.add_section("AC-h", 5)
-    cs.add_section("AE-h", 7)
-    cs.add_section("AH-h", 4)
-    cs.add_section("AK-h", 7)
-    cs.add_section("AK-v", 5)
-    cs.add_section("AO-h", 6)
-    cs.add_section("BH-v", 4)
-    cs.add_section("CC-v", 6)
-    cs.add_section("CM-h", 6)
-    cs.add_section("CK-v", 5)
-    cs.add_section("EA-v", 7)
-    cs.add_section("EB-h", 4)
-    cs.add_section("EG-h", 7)
-    cs.add_section("EI-h", 7)
-    cs.add_section("EI-v", 7)
-    cs.add_section("GE-v", 7)
-    cs.add_section("HA-v", 4)
-    cs.add_section("HC-h", 6)
-    cs.add_section("HL-v", 4)
-    cs.add_section("HN-h", 4)
-    cs.add_section("IE-h", 7)
-    cs.add_section("IE-v", 7)
-    cs.add_section("IK-h", 7)
-    cs.add_section("JA-h", 6)
-    cs.add_section("KM-h", 5)
-    cs.add_section("KA-v", 7)
-    cs.add_section("KI-v", 7)
-    cs.add_section("KO-h", 5)
-    cs.add_section("LH-h", 4)
-    cs.add_section("MA-v", 5)
-    cs.add_section("MH-v", 6)
-    cs.add_section("NE-v", 4)
-    cs.add_section("OA-v", 5)
-    cs.add_section("OJ-v", 6)
+    h_block_coords = get_block_coord_dict(crossnumber_array, transpose=False)
+    for coord, digits in h_block_coords.items():
+        cs.add_section(f"{letters[coord[1]]}{letters[coord[0]]}-h", digits)
+
+    v_block_coords = get_block_coord_dict(crossnumber_array, transpose=True)
+    for coord, digits in v_block_coords.items():
+        cs.add_section(f"{letters[coord[1]]}{letters[coord[0]]}-v", digits)
 
     # intersections
-    cs.connect("AA-h", "AA-v", 0, 0)
-    cs.connect("AA-h", "EA-v", 4, 0)
-    cs.connect("AC-h", "AA-v", 0, 2)
-    cs.connect("AC-h", "CC-v", 2, 0)
-    cs.connect("AC-h", "EA-v", 4, 2)
-    cs.connect("AE-h", "AA-v", 0, 4)
-    cs.connect("AE-h", "CC-v", 2, 2)
-    cs.connect("AE-h", "EA-v", 4, 4)
-    cs.connect("AE-h", "GE-v", -1, 0)
-    cs.connect("AH-h", "BH-v", 1, 0)
-    cs.connect("AH-h", "CC-v", 2, -1)
-    cs.connect("AK-h", "BH-v", 1, 3)
-    cs.connect("AK-h", "AK-v", 0, 0)
-    cs.connect("AK-h", "CK-v", 2, 0)
-    cs.connect("AK-h", "EI-v", 4, 2)
-    cs.connect("AK-h", "GE-v", -1, -1)
-    cs.connect("AO-h", "AK-v", 0, 4)
-    cs.connect("AO-h", "CK-v", 2, 4)
-    cs.connect("AO-h", "EI-v", 4, 6)
-    cs.connect("CM-h", "CK-v", 0, 2)
-    cs.connect("CM-h", "EI-v", 2, 4)
-    cs.connect("CM-h", "HL-v", -1, 1)
-    cs.connect("EB-h", "EA-v", 0, 1)
-    cs.connect("EB-h", "HA-v", 3, 1)
-    cs.connect("EG-h", "EA-v", 0, 6)
-    cs.connect("EG-h", "GE-v", 2, 2)
-    cs.connect("EG-h", "IE-v", 4, 2)
-    cs.connect("EG-h", "KA-v", 6, 6)
-    cs.connect("EI-h", "EI-v", 0, 0)
-    cs.connect("EI-h", "GE-v", 2, 4)
-    cs.connect("EI-h", "IE-v", 4, 4)
-    cs.connect("EI-h", "KI-v", 6, 0)
-    cs.connect("HC-h", "HA-v", 0, 3)
-    cs.connect("HC-h", "KA-v", 3, 3)
-    cs.connect("HC-h", "MA-v", 5, 3)
-    cs.connect("HN-h", "HL-v", 1, 2)
-    cs.connect("HN-h", "KI-v", 3, 5)
-    cs.connect("IE-h", "IE-v", 0, 0)
-    cs.connect("IE-h", "KA-v", 2, 4)
-    cs.connect("IE-h", "MA-v", 4, 4)
-    cs.connect("IE-h", "NE-v", 5, 0)
-    cs.connect("IE-h", "OA-v", 6, 4)
-    cs.connect("IK-h", "IE-v", 0, 6)
-    cs.connect("IK-h", "KI-v", 2, 2)
-    cs.connect("IK-h", "MH-v", 4, 3)
-    cs.connect("IK-h", "OJ-v", 6, 1)
-    cs.connect("JA-h", "KA-v", 1, 0)
-    cs.connect("JA-h", "MA-v", 3, 0)
-    cs.connect("JA-h", "OA-v", 5, 0)
-    cs.connect("KM-h", "KI-v", 0, 4)
-    cs.connect("KM-h", "MH-v", 2, 5)
-    cs.connect("KM-h", "OJ-v", 4, 3)
-    cs.connect("KO-h", "KI-v", 0, -1)
-    cs.connect("KO-h", "OJ-v", -1, -1)
-    cs.connect("LH-h", "MH-v", 1, 0)
-    cs.connect("LH-h", "NE-v", 2, -1)
+    for h_coord, h_digits in h_block_coords.items():
+        for v_coord, v_digits in v_block_coords.items():
+            # check if intersects
+            if (h_coord[1] <= v_coord[1] <= h_coord[1] + h_digits - 1) and (
+                v_coord[0] <= h_coord[0] <= v_coord[0] + v_digits - 1
+            ):
+                cs.connect(
+                    f"{letters[h_coord[1]]}{letters[h_coord[0]]}-h",
+                    f"{letters[v_coord[1]]}{letters[v_coord[0]]}-v",
+                    v_coord[1] - h_coord[1],
+                    h_coord[0] - v_coord[0],
+                )
 
     if fixed is not None:
         for section_key, options in fixed.items():
@@ -315,16 +327,9 @@ def generate_graph(fixed=None):
 
 
 if __name__ == "__main__":
-    cs = generate_graph()
+    cs = generate_graph(input_file="derdemachten.txt")
     print("=" * 80)
-    initial = {}
-    for origin, section in cs.sections.items():
-        initial[origin] = len(section.options)
-    ref_score = cs.score
-
-    print(cs.score)
     cs.solve()
-    print(cs.score)
     iterations = 0
     while cs.score > 0 and iterations <= 10:
         iterations += 1
@@ -332,10 +337,6 @@ if __name__ == "__main__":
             cs.assume(section_key)
             cs.solve()
             print(section_key, cs.score)
-
-    # print("=" * 80)
-    # for origin, section in cs.sections.items():
-    #     print(origin, section.options)
     print(cs)
     for idx, pos in zip("ABCDEFGH", ["KB", "OC", "CF", "EG", "KL", "CL", "GM", "JI"]):
         print(idx, cs.get_value(pos))
