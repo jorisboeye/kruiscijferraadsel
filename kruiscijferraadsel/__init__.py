@@ -186,15 +186,25 @@ class CrossNumber:
     def option_lengths(self):
         return [len(section.options) for section in self.sections.values()]
 
+    @property
+    def is_invalid(self):
+        """Check if the current state is invalid."""
+        return min(self.option_lengths) == 0
+
+    @property
+    def is_solved(self):
+        """Check if the current state is a solution."""
+        return max(self.option_lengths) == 1
+
     def assume(self, label):
         remove = set()
         for option in self.sections[label].options:
             assumed = deepcopy(self)
             assumed.sections[label].options = set([option])
             assumed.solve()
-            if min(assumed.option_lengths) == 0:
+            if assumed.is_invalid:
                 remove.add(option)
-            elif max(assumed.option_lengths) == 1:
+            elif assumed.is_solved:
                 print("SOLVED!")
         self.sections[label].options = self.sections[label].options.difference(remove)
 
