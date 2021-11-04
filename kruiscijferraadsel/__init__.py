@@ -79,12 +79,21 @@ class NumberSection:
             return [f"{cst}{idx}" for idx in indexes]
 
 
-@attr.s(auto_attribs=True)
+@attr.s(auto_attribs=True, repr=False)
 class NumberIntersection:
     horizontal: NumberSection = attr.ib(validator=instance_of(NumberSection))
     vertical: NumberSection = attr.ib(validator=instance_of(NumberSection))
     horizontal_idx: int = attr.ib(validator=instance_of(int))
     vertical_idx: int = attr.ib(validator=instance_of(int))
+
+    @property
+    def position(self):
+        indexes = string.ascii_uppercase
+        h_idx = indexes.find(self.horizontal.origin[0]) + self.horizontal_idx
+        h_val = indexes[h_idx]
+        v_idx = indexes.find(self.vertical.origin[1]) + self.vertical_idx
+        v_val = indexes[v_idx]
+        return f"{h_val}{v_val}"
 
     def filter(self):
         vertical_options = matches(
@@ -101,6 +110,9 @@ class NumberIntersection:
         )
         self.vertical.options = vertical_options
         self.horizontal.options = horizontal_options
+
+    def __repr__(self):
+        return f"{self.vertical.origin}-{self.horizontal.origin}-{self.position}"
 
 
 @attr.s(repr=False)
@@ -209,6 +221,39 @@ class CrossNumber:
             output += "\n" + 62 * "-" + "|\n"
         return output
 
+    @property
+    def intersection_positions(self):
+        return [intersection.position for intersection in self.intersections]
+
+    def is_intersection(self, position):
+        for intersection in self.intersections:
+            if intersection.position == position:
+                return True
+        return False
+
+    def get_intersection_value(self, position):
+        if self.is_intersection(position=position):
+            return " X "
+        for section in self.sections.values():
+            if position in section.indexes:
+                return "   "
+        return "\u2588" * 3
+
+    def print_intersections(self):
+        indexes = " ABCDEFGHIJKLMNO"
+        output = ""
+        for r_idx, row in enumerate(indexes):
+            output += row + " |"
+            for c_idx, column in enumerate(indexes):
+                if c_idx:
+                    if r_idx:
+                        value = self.get_intersection_value(position=f"{column}{row}")
+                        output += f"{value}|"
+                    else:
+                        output += f" {column} |"
+            output += "\n" + 62 * "-" + "|\n"
+        return output
+
 
 def generate_graph(fixed=None):
     cs = CrossNumber()
@@ -259,20 +304,20 @@ def generate_graph(fixed=None):
     cs.connect("AE-h", "AA-v", 0, 4)
     cs.connect("AE-h", "CC-v", 2, 2)
     cs.connect("AE-h", "EA-v", 4, 4)
-    cs.connect("AE-h", "GE-v", -1, 0)
+    cs.connect("AE-h", "GE-v", 6, 0)
     cs.connect("AH-h", "BH-v", 1, 0)
-    cs.connect("AH-h", "CC-v", 2, -1)
+    cs.connect("AH-h", "CC-v", 2, 5)
     cs.connect("AK-h", "BH-v", 1, 3)
     cs.connect("AK-h", "AK-v", 0, 0)
     cs.connect("AK-h", "CK-v", 2, 0)
     cs.connect("AK-h", "EI-v", 4, 2)
-    cs.connect("AK-h", "GE-v", -1, -1)
+    cs.connect("AK-h", "GE-v", 6, 6)
     cs.connect("AO-h", "AK-v", 0, 4)
     cs.connect("AO-h", "CK-v", 2, 4)
     cs.connect("AO-h", "EI-v", 4, 6)
     cs.connect("CM-h", "CK-v", 0, 2)
     cs.connect("CM-h", "EI-v", 2, 4)
-    cs.connect("CM-h", "HL-v", -1, 1)
+    cs.connect("CM-h", "HL-v", 5, 1)
     cs.connect("EB-h", "EA-v", 0, 1)
     cs.connect("EB-h", "HA-v", 3, 1)
     cs.connect("EG-h", "EA-v", 0, 6)
@@ -283,10 +328,10 @@ def generate_graph(fixed=None):
     cs.connect("EI-h", "GE-v", 2, 4)
     cs.connect("EI-h", "IE-v", 4, 4)
     cs.connect("EI-h", "KI-v", 6, 0)
-    cs.connect("HC-h", "HA-v", 0, 3)
-    cs.connect("HC-h", "KA-v", 3, 3)
-    cs.connect("HC-h", "MA-v", 5, 3)
-    cs.connect("HN-h", "HL-v", 1, 2)
+    cs.connect("HC-h", "HA-v", 0, 2)
+    cs.connect("HC-h", "KA-v", 3, 2)
+    cs.connect("HC-h", "MA-v", 5, 2)
+    cs.connect("HN-h", "HL-v", 0, 2)
     cs.connect("HN-h", "KI-v", 3, 5)
     cs.connect("IE-h", "IE-v", 0, 0)
     cs.connect("IE-h", "KA-v", 2, 4)
@@ -303,10 +348,10 @@ def generate_graph(fixed=None):
     cs.connect("KM-h", "KI-v", 0, 4)
     cs.connect("KM-h", "MH-v", 2, 5)
     cs.connect("KM-h", "OJ-v", 4, 3)
-    cs.connect("KO-h", "KI-v", 0, -1)
-    cs.connect("KO-h", "OJ-v", -1, -1)
+    cs.connect("KO-h", "KI-v", 0, 6)
+    cs.connect("KO-h", "OJ-v", 4, 5)
     cs.connect("LH-h", "MH-v", 1, 0)
-    cs.connect("LH-h", "NE-v", 2, -1)
+    cs.connect("LH-h", "NE-v", 2, 3)
 
     if fixed is not None:
         for section_key, options in fixed.items():
@@ -317,11 +362,6 @@ def generate_graph(fixed=None):
 if __name__ == "__main__":
     cs = generate_graph()
     print("=" * 80)
-    initial = {}
-    for origin, section in cs.sections.items():
-        initial[origin] = len(section.options)
-    ref_score = cs.score
-
     print(cs.score)
     cs.solve()
     print(cs.score)
@@ -332,10 +372,11 @@ if __name__ == "__main__":
             cs.assume(section_key)
             cs.solve()
             print(section_key, cs.score)
-
-    # print("=" * 80)
-    # for origin, section in cs.sections.items():
-    #     print(origin, section.options)
     print(cs)
+    # print(cs.print_intersections())
     for idx, pos in zip("ABCDEFGH", ["KB", "OC", "CF", "EG", "KL", "CL", "GM", "JI"]):
         print(idx, cs.get_value(pos))
+    # for intersection in cs.intersections:
+    #     print(intersection)
+    # print(cs.intersection_positions)
+ 
