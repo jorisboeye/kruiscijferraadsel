@@ -10,29 +10,6 @@ import attr
 import numpy as np
 from attr.validators import instance_of
 
-crossnumber_array = (
-    np.array(
-        [
-            ["#", "#", "#", "#", "#", "-", "-", "#", "-", "#", "#", "#", "#", "#", "#"],
-            ["#", "-", "-", "-", "#", "#", "#", "#", "-", "-", "#", "-", "#", "-", "#"],
-            ["#", "#", "#", "#", "#", "-", "-", "#", "#", "#", "#", "#", "#", "-", "#"],
-            ["#", "-", "#", "-", "#", "-", "-", "#", "-", "-", "#", "-", "#", "-", "#"],
-            ["#", "#", "#", "#", "#", "#", "#", "-", "#", "#", "#", "#", "#", "#", "#"],
-            ["#", "-", "#", "-", "#", "-", "#", "-", "#", "-", "#", "-", "-", "#", "-"],
-            ["-", "-", "#", "-", "#", "#", "#", "#", "#", "#", "#", "-", "-", "#", "-"],
-            ["#", "#", "#", "#", "-", "-", "#", "-", "#", "-", "-", "#", "#", "#", "#"],
-            ["-", "#", "-", "-", "#", "#", "#", "#", "#", "#", "#", "-", "#", "-", "-"],
-            ["-", "#", "-", "-", "#", "-", "#", "-", "#", "-", "#", "-", "#", "-", "#"],
-            ["#", "#", "#", "#", "#", "#", "#", "-", "#", "#", "#", "#", "#", "#", "#"],
-            ["#", "-", "#", "-", "#", "-", "-", "#", "-", "-", "#", "-", "#", "-", "#"],
-            ["#", "-", "#", "#", "#", "#", "#", "#", "-", "-", "#", "#", "#", "#", "#"],
-            ["#", "-", "#", "-", "#", "-", "-", "#", "#", "#", "#", "-", "-", "-", "#"],
-            ["#", "#", "#", "#", "#", "#", "-", "#", "-", "-", "#", "#", "#", "#", "#"],
-        ]
-    )
-    == "#"
-)
-
 
 def thirdpower(start, stop):
     i_start = int(np.ceil(start ** (1 / 3)))
@@ -72,7 +49,9 @@ class Orientation(Enum):
 class NumberSection:
     origin: str
     options: Set[str] = attr.ib(validator=instance_of(set), converter=set)
-    orientation: Orientation = attr.ib(validator=instance_of(Orientation), converter=lambda x: Orientation[x.upper()])
+    orientation: Orientation = attr.ib(
+        validator=instance_of(Orientation), converter=lambda x: Orientation[x.upper()]
+    )
     length: int = attr.ib(init=False)
     indexes: Tuple[str] = attr.ib(init=False)
 
@@ -149,7 +128,9 @@ class CrossNumber:
     def add_section(self, identifier, length):
         origin, orientation = identifier.split("-")
         orientation = "horizontal" if orientation == "h" else "vertical"
-        self.sections[identifier] = NumberSection(origin=origin, options=self.options[length], orientation=orientation)
+        self.sections[identifier] = NumberSection(
+            origin=origin, options=self.options[length], orientation=orientation
+        )
 
     def connect(self, horizontal_key, vertical_key, horizontal_idx, vertical_idx):
         self.intersections.append(
@@ -180,7 +161,9 @@ class CrossNumber:
     def parse_uniques(self):
         for section_key, section in self.sections.items():
             if len(section.options) > 1:
-                self.sections[section_key].options = section.options.difference(self.uniques)
+                self.sections[section_key].options = section.options.difference(
+                    self.uniques
+                )
 
     @property
     def option_lengths(self):
@@ -310,20 +293,18 @@ def get_block_coord_dict(c: np.array, transpose: bool):
     return horizontal_block_coords_dict
 
 
-def generate_graph(fixed=None):
-    cs = CrossNumber()
+def generate_graph(input_file, fixed=None, **kwargs):
+    cs = CrossNumber(**kwargs)
     letters = "ABCDEFGHIJKLMNO"
-
+    crossnumber_array = np.loadtxt(input_file)
     # sections
     h_block_coords = get_block_coord_dict(crossnumber_array, transpose=False)
     for coord, digits in h_block_coords.items():
         cs.add_section(f"{letters[coord[1]]}{letters[coord[0]]}-h", digits)
-        print(f"{letters[coord[1]]}{letters[coord[0]]}-h", digits)
 
     v_block_coords = get_block_coord_dict(crossnumber_array, transpose=True)
     for coord, digits in v_block_coords.items():
         cs.add_section(f"{letters[coord[1]]}{letters[coord[0]]}-v", digits)
-        print(f"{letters[coord[1]]}{letters[coord[0]]}-v", digits)
 
     # intersections
     for h_coord, h_digits in h_block_coords.items():
@@ -338,12 +319,6 @@ def generate_graph(fixed=None):
                     v_coord[1] - h_coord[1],
                     h_coord[0] - v_coord[0],
                 )
-                print(
-                    f"{letters[h_coord[1]]}{letters[h_coord[0]]}-h",
-                    f"{letters[v_coord[1]]}{letters[v_coord[0]]}-v",
-                    v_coord[1] - h_coord[1],
-                    h_coord[0] - v_coord[0],
-                )
 
     if fixed is not None:
         for section_key, options in fixed.items():
@@ -352,11 +327,9 @@ def generate_graph(fixed=None):
 
 
 if __name__ == "__main__":
-    cs = generate_graph()
+    cs = generate_graph(input_file="derdemachten.txt")
     print("=" * 80)
-    print(cs.score)
     cs.solve()
-    print(cs.score)
     iterations = 0
     while cs.score > 0 and iterations <= 10:
         iterations += 1
@@ -365,10 +338,5 @@ if __name__ == "__main__":
             cs.solve()
             print(section_key, cs.score)
     print(cs)
-    # print(cs.print_intersections())
     for idx, pos in zip("ABCDEFGH", ["KB", "OC", "CF", "EG", "KL", "CL", "GM", "JI"]):
         print(idx, cs.get_value(pos))
-    # for intersection in cs.intersections:
-    #     print(intersection)
-    # print(cs.intersection_positions)
- 
