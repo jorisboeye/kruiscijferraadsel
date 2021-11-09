@@ -1,5 +1,6 @@
 __version__ = "0.1.0"
 
+import re
 import string
 from collections import defaultdict
 from copy import deepcopy
@@ -45,6 +46,27 @@ def matches(section, other, idx, other_idx):
     for option in section.options:
         options = options | match(option[idx], other.options, other_idx)
     return options
+
+
+def section_filter(line: str) -> str:
+    """Filter out non sections in a line (row or column)
+
+    A section in a certain line (a row or a column) consists of at least
+    two `1` characters. If a single `1` character occurs, this needs not
+    be evaluated. This function filters out these single `1`s.
+
+    Parameters
+    ----------
+    line : str
+        [description]
+
+    Returns
+    -------
+    str
+        [description]
+    """
+
+    return re.sub(r"(?:^|[^1])1(?=[^1]|$)", lambda x: "0" * len(x.group()), line)
 
 
 class Orientation(Enum):
@@ -350,7 +372,7 @@ CONFIG = {
 
 
 if __name__ == "__main__":
-    challenge = CONFIG["kwadraten"]
+    challenge = CONFIG["derdemachten"]
     cs = generate_graph(
         input_file=challenge["input_file"], words=challenge["word_generator"]
     )
@@ -367,3 +389,6 @@ if __name__ == "__main__":
     print(cs)
     for idx, pos in zip(string.ascii_uppercase, challenge["solution"]):
         print(idx, cs.get_value(pos))
+    array = np.loadtxt(challenge["input_file"])
+    print(array)
+    print(np.diff(array, axis=1))
