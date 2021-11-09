@@ -11,6 +11,13 @@ import numpy as np
 from attr.validators import instance_of
 
 
+def secondpower(start, stop):
+    i_start = int(np.ceil(start ** (1 / 2)))
+    i_stop = int(np.floor(stop ** (1 / 2))) + 1
+    for i in range(i_start, i_stop):
+        yield str(i ** 2)
+
+
 def thirdpower(start, stop):
     i_start = int(np.ceil(start ** (1 / 3)))
     i_stop = int(np.floor(stop ** (1 / 3))) + 1
@@ -119,7 +126,7 @@ class NumberIntersection:
 class CrossNumber:
     sections: Dict[str, NumberSection] = attr.ib(factory=dict)
     intersections: List[NumberIntersection] = attr.ib(factory=list)
-    words: FrozenSet[str] = attr.ib(default=frozenset(thirdpower(1000, 10_000_000)))
+    words: FrozenSet[str] = attr.ib(default=frozenset(), converter=frozenset)
     options: Dict[int, FrozenSet[str]] = attr.ib(init=False)
 
     def __attrs_post_init__(self):
@@ -189,7 +196,9 @@ class CrossNumber:
                 remove.add(option)
             elif assumed.is_solved:
                 print("SOLVED!")
+                return assumed
         self.sections[label].options = self.sections[label].options.difference(remove)
+        return self
 
     @property
     def score(self):
@@ -295,8 +304,8 @@ def get_block_coord_dict(c: np.array, transpose: bool):
 
 def generate_graph(input_file, fixed=None, **kwargs):
     cs = CrossNumber(**kwargs)
-    letters = "ABCDEFGHIJKLMNO"
     crossnumber_array = np.loadtxt(input_file)
+    letters = string.ascii_uppercase[: len(crossnumber_array)]
     # sections
     h_block_coords = get_block_coord_dict(crossnumber_array, transpose=False)
     for coord, digits in h_block_coords.items():
@@ -326,17 +335,35 @@ def generate_graph(input_file, fixed=None, **kwargs):
     return cs
 
 
+CONFIG = {
+    "kwadraten": {
+        "solution": ["IG", "DB", "BI", "GD", "EB", "BE", "AC", "BA"],
+        "input_file": "kwadraten_input.txt",
+        "word_generator": secondpower(10, 1_000_000),
+    },
+    "derdemachten": {
+        "solution": ["KB", "OC", "CF", "EG", "KL", "CL", "GM", "JI"],
+        "input_file": "derdemachten_input.txt",
+        "word_generator": thirdpower(1000, 10_000_000),
+    },
+}
+
+
 if __name__ == "__main__":
-    cs = generate_graph(input_file="derdemachten.txt")
-    print("=" * 80)
+    challenge = CONFIG["kwadraten"]
+    cs = generate_graph(
+        input_file=challenge["input_file"], words=challenge["word_generator"]
+    )
     cs.solve()
     iterations = 0
-    while cs.score > 0 and iterations <= 10:
+    while not cs.is_solved and iterations <= 10:
         iterations += 1
         for section_key in cs.sections:
-            cs.assume(section_key)
+            cs = cs.assume(section_key)
             cs.solve()
             print(section_key, cs.score)
+            if cs.is_solved:
+                break
     print(cs)
-    for idx, pos in zip("ABCDEFGH", ["KB", "OC", "CF", "EG", "KL", "CL", "GM", "JI"]):
+    for idx, pos in zip(string.ascii_uppercase, challenge["solution"]):
         print(idx, cs.get_value(pos))
