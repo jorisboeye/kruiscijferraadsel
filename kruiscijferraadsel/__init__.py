@@ -76,7 +76,8 @@ def replace_section_indexes(line: str) -> str:
 
 
 def get_section_starting_indexes(line: str) -> str:
-    pass
+    section_indexes = replace_section_indexes(line=section_filter(line=line))
+    return [s[0] for s in section_indexes.strip().split()]
 
 
 class Orientation(Enum):
