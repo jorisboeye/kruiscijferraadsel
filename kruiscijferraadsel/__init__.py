@@ -69,6 +69,16 @@ def section_filter(line: str) -> str:
     return re.sub(r"(?:^|[^1])1(?=[^1]|$)", lambda x: "0" * len(x.group()), line)
 
 
+def replace_section_indexes(line: str) -> str:
+    return "".join(
+        [idx if int(s) else " " for idx, s in zip(string.ascii_uppercase, line)]
+    )
+
+
+def get_section_starting_indexes(line: str) -> str:
+    pass
+
+
 class Orientation(Enum):
     HORIZONTAL = "horizontal"
     VERTICAL = "vertical"
