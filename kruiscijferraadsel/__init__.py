@@ -70,14 +70,37 @@ def section_filter(line: str) -> str:
 
 
 def replace_section_indexes(line: str) -> str:
+    """Replace each section component with its alphabetical index."""
     return "".join(
         [idx if int(s) else " " for idx, s in zip(string.ascii_uppercase, line)]
     )
 
 
-def get_section_starting_indexes(line: str) -> str:
-    section_indexes = replace_section_indexes(line=section_filter(line=line))
-    return [s[0] for s in section_indexes.strip().split()]
+def section_indexes(line: str, line_index: str, horizontal: bool) -> List[Tuple[str]]:
+    sections = replace_section_indexes(line=section_filter(line=line)).strip().split()
+    if horizontal:
+        return [tuple(line_index + idx for idx in section) for section in sections]
+    else:
+        return [tuple(idx + line_index for idx in section) for section in sections]
+
+
+def section_generator(lines: List[str], horizontal: bool):
+    for line_index, line in zip(string.ascii_uppercase, lines):
+        sections = section_indexes(
+            line=line, line_index=line_index, horizontal=horizontal
+        )
+        for section in sections:
+            yield section
+
+
+def transpose_lines(lines: List[str]):
+    return list(map("".join, zip(*lines)))
+
+
+def parse_lines(lines: List[str], horizontal: bool):
+    if not horizontal:
+        lines = transpose_lines(lines=lines)
+    return list(section_generator(lines=lines, horizontal=horizontal))
 
 
 class Orientation(Enum):
