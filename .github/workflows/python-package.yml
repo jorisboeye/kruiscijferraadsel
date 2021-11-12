@@ -30,6 +30,8 @@ jobs:
     - name: Install dependencies
       run: |
         poetry install
+    - run: poetry --version
+    - run: poetry config virtualenvs.path
     - name: Test with pytest
       run: |
         source .venv/bin/activate
