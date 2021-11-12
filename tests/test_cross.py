@@ -1,8 +1,8 @@
 from kruiscijferraadsel import CrossNumber, NumberIntersection, NumberSection
 
 
-def test_add_sections(options):
-    cn = CrossNumber()
+def test_add_sections(words):
+    cn = CrossNumber(words=words)
     cn.add_section("A8-h", 4)
     cn.add_section("B8-v", 4)
     assert len(cn.sections) == 2
