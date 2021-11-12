@@ -1,5 +1,6 @@
 __version__ = "0.1.0"
 
+import re
 import string
 from collections import defaultdict
 from copy import deepcopy
@@ -45,6 +46,61 @@ def matches(section, other, idx, other_idx):
     for option in section.options:
         options = options | match(option[idx], other.options, other_idx)
     return options
+
+
+def section_filter(line: str) -> str:
+    """Filter out non sections in a line (row or column)
+
+    A section in a certain line (a row or a column) consists of at least
+    two `1` characters. If a single `1` character occurs, this needs not
+    be evaluated. This function filters out these single `1`s.
+
+    Parameters
+    ----------
+    line : str
+        [description]
+
+    Returns
+    -------
+    str
+        [description]
+    """
+
+    return re.sub(r"(?:^|[^1])1(?=[^1]|$)", lambda x: "0" * len(x.group()), line)
+
+
+def replace_section_indexes(line: str) -> str:
+    """Replace each section component with its alphabetical index."""
+    return "".join(
+        [idx if int(s) else " " for idx, s in zip(string.ascii_uppercase, line)]
+    )
+
+
+def section_indexes(line: str, line_index: str, horizontal: bool) -> List[Tuple[str]]:
+    sections = replace_section_indexes(line=section_filter(line=line)).strip().split()
+    if horizontal:
+        return [tuple(line_index + idx for idx in section) for section in sections]
+    else:
+        return [tuple(idx + line_index for idx in section) for section in sections]
+
+
+def section_generator(lines: List[str], horizontal: bool):
+    for line_index, line in zip(string.ascii_uppercase, lines):
+        sections = section_indexes(
+            line=line, line_index=line_index, horizontal=horizontal
+        )
+        for section in sections:
+            yield section
+
+
+def transpose_lines(lines: List[str]):
+    return list(map("".join, zip(*lines)))
+
+
+def parse_lines(lines: List[str], horizontal: bool):
+    if not horizontal:
+        lines = transpose_lines(lines=lines)
+    return list(section_generator(lines=lines, horizontal=horizontal))
 
 
 class Orientation(Enum):
@@ -350,7 +406,7 @@ CONFIG = {
 
 
 if __name__ == "__main__":
-    challenge = CONFIG["kwadraten"]
+    challenge = CONFIG["derdemachten"]
     cs = generate_graph(
         input_file=challenge["input_file"], words=challenge["word_generator"]
     )
@@ -367,3 +423,6 @@ if __name__ == "__main__":
     print(cs)
     for idx, pos in zip(string.ascii_uppercase, challenge["solution"]):
         print(idx, cs.get_value(pos))
+    array = np.loadtxt(challenge["input_file"])
+    print(array)
+    print(np.diff(array, axis=1))
