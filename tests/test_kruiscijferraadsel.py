@@ -31,7 +31,7 @@ def test_intersect(horizontal, vertical, h_idx, v_idx, expected):
         (3, 1_000_000, 10_000_000, "1000000", "9938375"),
     ),
 )
-def test_generator(start, stop, power, min_val, max_val):
+def test_generator(power, start, stop, min_val, max_val):
     powers = list(kcr.powers_in_range(power, start, stop))
     assert powers[0] == min_val
     assert powers[-1] == max_val
