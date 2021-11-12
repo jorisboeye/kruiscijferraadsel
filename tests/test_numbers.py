@@ -4,25 +4,29 @@ from kruiscijferraadsel import NumberSection, Orientation, intersect
 
 
 @pytest.mark.parametrize(
-    "orientation, expected",
-    (("horizontal", Orientation.HORIZONTAL), ("vertical", Orientation.VERTICAL)),
+    "indexes, expected",
+    (
+        (("AB", "BB", "CB", "DB", "EB", "FB"), "AB"),
+        (("FB", "FC", "FD", "FE", "FF"), "FB"),
+    ),
 )
-def test_orientation(options, orientation, expected):
-    ns = NumberSection(origin="A8", options=options[4], orientation=orientation)
-    assert ns.orientation == expected
+def test_origin(indexes, expected):
+    ns = NumberSection(indexes, options=set(), horizontal=True)
+    assert ns.origin == expected
 
 
 @pytest.mark.parametrize(
-    "horizontal, vertical, h_idx, v_idx, expected",
+    "horizontal, vertical, expected",
     (
-        ("test", "test", 1, 0, False),
-        ("test", "test", 1, 1, True),
-        ("untest", "test", 3, 1, True),
-        ("untest", "test", 3, 2, False),
+        (("AB", "BB", "CB", "DB", "EB", "FB"), ("FB", "FC", "FD", "FE", "FF"), True),
+        (("AB", "BB", "CB", "DB", "EB", "FB"), ("FD", "FE", "FF"), False),
     ),
 )
-def test_intersect(horizontal, vertical, h_idx, v_idx, expected):
-    assert intersect(horizontal, vertical, h_idx, v_idx) == expected
+def test_intersect(horizontal, vertical, expected):
+    ns_h = NumberSection(indexes=horizontal, options=set(), horizontal=True)
+    ns_v = NumberSection(indexes=vertical, options=set(), horizontal=False)
+    assert ns_h.intersects(ns_v) == expected
+    assert ns_v.intersects(ns_h) == expected
 
 
 def test_filter(intersection):

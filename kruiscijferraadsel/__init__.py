@@ -110,36 +110,28 @@ class Orientation(Enum):
 
 @attr.s(auto_attribs=True)
 class NumberSection:
-    origin: str
-    options: Set[str] = attr.ib(validator=instance_of(set), converter=set)
-    orientation: Orientation = attr.ib(
-        validator=instance_of(Orientation), converter=lambda x: Orientation[x.upper()]
+    indexes: FrozenSet[str] = attr.ib(
+        validator=instance_of(frozenset), converter=frozenset
     )
-    length: int = attr.ib(init=False)
-    indexes: Tuple[str] = attr.ib(init=False)
-
-    def __attrs_post_init__(self):
-        self.length = len(next(iter(self.options)))
-        self.indexes = self.get_indexes()
+    options: Set[str] = attr.ib(validator=instance_of(set), converter=set)
+    horizontal: bool = attr.ib(validator=instance_of(bool))
 
     def __len__(self):
-        return self.length
+        return len(self.indexes)
 
-    def get_indexes(self):
-        if self.orientation == Orientation.HORIZONTAL:
-            start = self.origin[0]
-            cst = self.origin[-1]
-        else:
-            start = self.origin[-1]
-            cst = self.origin[0]
-        indexes = string.ascii_uppercase
-        start_idx = indexes.find(start)
-        end_idx = start_idx + self.length
-        indexes = indexes[start_idx:end_idx]
-        if self.orientation == Orientation.HORIZONTAL:
-            return [f"{idx}{cst}" for idx in indexes]
-        else:
-            return [f"{cst}{idx}" for idx in indexes]
+    @property
+    def origin(self):
+        return min(self.indexes)
+
+    @property
+    def label(self):
+        suffix = "-h" if self.horizontal else "-v"
+        return self.origin + suffix
+
+    def intersects(self, other: "NumberSection") -> bool:
+        if self.horizontal == other.horizontal:
+            raise ValueError("Sections with identical orientation can't intersect.")
+        return bool(self.indexes.intersection(other.indexes))
 
 
 @attr.s(auto_attribs=True, repr=False)
