@@ -27,10 +27,10 @@ jobs:
     - uses: Gr1N/setup-poetry@v7
       with:
         poetry-version: 1.1.11
+        virtualenvs.in-project: true
     - name: Install dependencies
       run: |
         poetry install
-    - run: poetry --version
     - run: poetry config virtualenvs.path
     - name: Test with pytest
       run: |
