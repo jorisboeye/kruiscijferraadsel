@@ -12,18 +12,11 @@ import numpy as np
 from attr.validators import instance_of
 
 
-def secondpower(start, stop):
-    i_start = int(np.ceil(start ** (1 / 2)))
-    i_stop = int(np.floor(stop ** (1 / 2))) + 1
+def powers_in_range(power: int, start: int, stop: int):
+    i_start = int(np.ceil(start ** (1 / power)))
+    i_stop = int(np.floor(stop ** (1 / power))) + 1
     for i in range(i_start, i_stop):
-        yield str(i ** 2)
-
-
-def thirdpower(start, stop):
-    i_start = int(np.ceil(start ** (1 / 3)))
-    i_stop = int(np.floor(stop ** (1 / 3))) + 1
-    for i in range(i_start, i_stop):
-        yield str(i ** 3)
+        yield str(i ** power)
 
 
 def generate_options(words):
@@ -395,12 +388,12 @@ CONFIG = {
     "kwadraten": {
         "solution": ["IG", "DB", "BI", "GD", "EB", "BE", "AC", "BA"],
         "input_file": "kwadraten_input.txt",
-        "word_generator": secondpower(10, 1_000_000),
+        "word_generator": powers_in_range(2, 10, 1_000_000),
     },
     "derdemachten": {
         "solution": ["KB", "OC", "CF", "EG", "KL", "CL", "GM", "JI"],
         "input_file": "derdemachten_input.txt",
-        "word_generator": thirdpower(1000, 10_000_000),
+        "word_generator": powers_in_range(3, 1000, 10_000_000),
     },
 }
 
