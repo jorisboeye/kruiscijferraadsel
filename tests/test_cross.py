@@ -1,19 +1,17 @@
-from kruiscijferraadsel import CrossNumber, NumberIntersection, NumberSection
+from kruiscijferraadsel import CrossNumber
 
 
 def test_add_sections(words):
     cn = CrossNumber(words=words)
-    cn.add_section("A8-h", 4)
-    cn.add_section("B8-v", 4)
+    cn.add_section(indexes=("FB", "FC", "FD", "FE", "FF"), horizontal=True)
+    cn.add_section(indexes=("AB", "BB", "CB", "DB", "EB", "FB"), horizontal=False)
     assert len(cn.sections) == 2
 
 
 def test_connect(words):
     cn = CrossNumber(words=words)
-    s1 = NumberSection(origin="A8", options=cn.options[4], orientation="horizontal")
-    s2 = NumberSection(origin="B8", options=cn.options[4], orientation="vertical")
-    cn.add_section("A8-h", 4)
-    cn.add_section("B8-v", 4)
-    cn.connect("A8-h", "B8-v", 1, 0)
-    expected = NumberIntersection(s1, s2, 1, 0)
-    assert cn.intersections[0] == expected
+    cn.add_section(indexes=("FB", "FC", "FD", "FE", "FF"), horizontal=True)
+    cn.add_section(indexes=("AB", "BB", "CB", "DB", "EB", "FB"), horizontal=False)
+    cn.connect()
+    cn.connect()
+    assert len(cn.intersections) == 1

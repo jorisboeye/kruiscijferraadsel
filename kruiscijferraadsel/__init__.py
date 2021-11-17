@@ -128,20 +128,26 @@ class NumberSection:
 
 
 @attr.s(auto_attribs=True, repr=False)
-class NumberIntersection:
+class InterSection:
     horizontal: NumberSection = attr.ib(validator=instance_of(NumberSection))
     vertical: NumberSection = attr.ib(validator=instance_of(NumberSection))
-    horizontal_idx: int = attr.ib(validator=instance_of(int))
-    vertical_idx: int = attr.ib(validator=instance_of(int))
 
     @property
     def position(self):
-        indexes = string.ascii_uppercase
-        h_idx = indexes.find(self.horizontal.origin[0]) + self.horizontal_idx
-        h_val = indexes[h_idx]
-        v_idx = indexes.find(self.vertical.origin[1]) + self.vertical_idx
-        v_val = indexes[v_idx]
-        return f"{h_val}{v_val}"
+        (position,) = self.horizontal.indexes.intersection(self.vertical.indexes)
+        return position
+
+    @property
+    def horizontal_idx(self):
+        return string.ascii_uppercase.find(
+            self.position[0]
+        ) - string.ascii_uppercase.find(self.horizontal.origin[0])
+
+    @property
+    def vertical_idx(self):
+        return string.ascii_uppercase.find(
+            self.position[-1]
+        ) - string.ascii_uppercase.find(self.vertical.origin[-1])
 
     def filter(self):
         vertical_options = matches(
@@ -166,29 +172,36 @@ class NumberIntersection:
 @attr.s(repr=False)
 class CrossNumber:
     sections: Dict[str, NumberSection] = attr.ib(factory=dict)
-    intersections: List[NumberIntersection] = attr.ib(factory=list)
+    intersections: List[InterSection] = attr.ib(factory=list)
     words: FrozenSet[str] = attr.ib(default=frozenset(), converter=frozenset)
     options: Dict[int, FrozenSet[str]] = attr.ib(init=False)
 
     def __attrs_post_init__(self):
         self.options = generate_options(words=self.words)
 
-    def add_section(self, identifier, length):
-        origin, orientation = identifier.split("-")
-        orientation = "horizontal" if orientation == "h" else "vertical"
-        self.sections[identifier] = NumberSection(
-            origin=origin, options=self.options[length], orientation=orientation
+    def add_section(self, indexes: Tuple[str], horizontal: bool):
+        section = NumberSection(
+            indexes=indexes, options=self.options[len(indexes)], horizontal=horizontal
         )
+        self.sections[section.label] = section
 
-    def connect(self, horizontal_key, vertical_key, horizontal_idx, vertical_idx):
-        self.intersections.append(
-            NumberIntersection(
-                horizontal=self.sections[horizontal_key],
-                vertical=self.sections[vertical_key],
-                horizontal_idx=horizontal_idx,
-                vertical_idx=vertical_idx,
-            )
-        )
+    @property
+    def horizontal_sections(self):
+        return [s for s in self.sections.values() if s.horizontal]
+
+    @property
+    def vertical_sections(self):
+        return [s for s in self.sections.values() if not s.horizontal]
+
+    def connect(self):
+        for horizontal in self.horizontal_sections:
+            for vertical in self.vertical_sections:
+                if horizontal.intersects(vertical):
+                    intersection = InterSection(
+                        horizontal=horizontal, vertical=vertical
+                    )
+                    if intersection not in self.intersections:
+                        self.intersections.append(intersection)
 
     def filter(self):
         for intersection in self.intersections:

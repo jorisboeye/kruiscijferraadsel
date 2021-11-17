@@ -1,6 +1,6 @@
 import pytest
 
-from kruiscijferraadsel import NumberIntersection, NumberSection, generate_options
+from kruiscijferraadsel import InterSection, NumberSection, generate_options
 
 
 @pytest.fixture(scope="session")
@@ -34,12 +34,12 @@ def options(words):
 @pytest.fixture(scope="function")
 def intersection(options):
     horizontal = NumberSection(
-        origin="A8", options=options[4], orientation="horizontal"
+        indexes=("HA", "HB", "HC", "HD"), options=options[4], horizontal=True
     )
-    vertical = NumberSection(origin="B8", options=options[5], orientation="vertical")
-    return NumberIntersection(
-        horizontal=horizontal, vertical=vertical, horizontal_idx=0, vertical_idx=0
+    vertical = NumberSection(
+        indexes=("HB", "IB", "JB", "KB"), options=options[5], horizontal=False
     )
+    return InterSection(horizontal=horizontal, vertical=vertical)
 
 
 # @pytest.fixture(scope="function")
