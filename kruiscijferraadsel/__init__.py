@@ -179,6 +179,17 @@ class CrossNumber:
     def __attrs_post_init__(self):
         self.options = generate_options(words=self.words)
 
+    @classmethod
+    def from_file(cls, file, words):
+        with open(file, "r") as f:
+            lines = f.read().splitlines()
+        puzzle = cls(words=words)
+        for horizontal in [True, False]:
+            for indexes in parse_lines(lines=lines, horizontal=horizontal):
+                puzzle.add_section(indexes=indexes, horizontal=horizontal)
+        puzzle.connect()
+        return puzzle
+
     def add_section(self, indexes: Tuple[str], horizontal: bool):
         section = NumberSection(
             indexes=indexes, options=self.options[len(indexes)], horizontal=horizontal
@@ -287,7 +298,7 @@ class CrossNumber:
             for c_idx, column in enumerate(indexes):
                 if c_idx:
                     if r_idx:
-                        value = self.get_value(position=f"{column}{row}")
+                        value = self.get_value(position=f"{row}{column}")
                         output += f"{value}|"
                     else:
                         output += f" {column} |"
@@ -405,9 +416,10 @@ CONFIG = {
 
 if __name__ == "__main__":
     challenge = CONFIG["derdemachten"]
-    cs = generate_graph(
-        input_file=challenge["input_file"], words=challenge["word_generator"]
+    cs = CrossNumber.from_file(
+        file=challenge["input_file"], words=challenge["word_generator"]
     )
+    print(cs)
     cs.solve()
     iterations = 0
     while not cs.is_solved and iterations <= 10:
@@ -419,8 +431,5 @@ if __name__ == "__main__":
             if cs.is_solved:
                 break
     print(cs)
-    for idx, pos in zip(string.ascii_uppercase, challenge["solution"]):
-        print(idx, cs.get_value(pos))
-    array = np.loadtxt(challenge["input_file"])
-    print(array)
-    print(np.diff(array, axis=1))
+    # for idx, pos in zip(string.ascii_uppercase, challenge["solution"]):
+    #     print(idx, cs.get_value(pos))
