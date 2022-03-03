@@ -16,7 +16,7 @@ def powers_in_range(power: int, start: int, stop: int):
     i_start = int(np.ceil(start ** (1 / power)))
     i_stop = int(np.floor(stop ** (1 / power))) + 1
     for i in range(i_start, i_stop):
-        yield str(i ** power)
+        yield str(i**power)
 
 
 def generate_options(words):
